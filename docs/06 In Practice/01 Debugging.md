@@ -91,13 +91,6 @@ glCheckError();
 
 ![](../img/06/01/debugging_glgeterror.png)
 
-还有一个**重要的**事情需要知道，GLEW有一个历史悠久的bug，调用<fun>glewInit()</fun>会设置一个<var>GL_INVALID_ENUM</var>的错误标记，所以第一次调用的<fun>glGetError</fun>永远会猝不及防地给你返回一个错误代码。如果要修复这个bug，我们建议您在调用<fun>glewInit</fun>之后立即调用<fun>glGetError</fun>消除这个标记：
-
-```c++
-glewInit();
-glGetError();
-```
-
 <fun>glGetError</fun>并不能帮助你很多，因为它返回的信息非常简单，但不可否认它经常能帮助你检查笔误或者快速定位错误来源。总而言之，是一个非常简单但有效的工具。
 
 ## 调试输出
@@ -115,7 +108,7 @@ glGetError();
 在GLFW中请求一个调试输出非常简单，我们只需要传递一个提醒到GLFW中，告诉它我们需要一个调试输出上下文即可。我们需要在调用<fun>glfwCreateWindow</fun>之前完成这一请求。
 
 ```c++
-glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 ```
 
 一旦GLFW初始化完成，如果我们使用的OpenGL 版本为4.3或以上的话我们就有一个调试上下文了，如果不是的话则祈祷系统仍然能够请求一个调试上下文吧。如果还是不行的话我们必须使用它的OpenGL拓展来请求调试输出。
@@ -137,21 +130,19 @@ if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
 调试输出工作的方式是这样的，我们首先将一个错误记录函数的回调（类似于GLFW输入的回调）传递给OpenGL，在这个回调函数中我们可以自由地处理OpenGL错误数据，在这里我们将输出一些有用的错误数据到控制台中。下面是这个就是OpenGL对调试输出所期待的回调函数的原型：
 
 ```c++
-void APIENTRY glDebugOutput(GLenum source, GLenum type, GLuint id, GLenum severity, 
-                            GLsizei length, const GLchar *message, void *userParam);
+void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, 
+                            GLsizei length, const char *message, const void *userParam);
 ```
-
-注意在OpenGL的某些实现中最后一个参数为`const void*`而不是`void*`。
 
 有了这一大堆的数据，我们可以创建一个非常有用的错误打印工具：
 
 ```c++
 void APIENTRY glDebugOutput(GLenum source, 
                             GLenum type, 
-                            GLuint id, 
+                            unsigned int id, 
                             GLenum severity, 
                             GLsizei length, 
-                            const GLchar *message, 
+                            const char *message, 
                             void *userParam)
 {
     // 忽略一些不重要的错误/警告代码
@@ -196,6 +187,20 @@ void APIENTRY glDebugOutput(GLenum source,
 
 当调试输出检测到了一个OpenGL错误，它会调用这个回调函数，我们将可以打印出非常多的OpenGL错误信息。注意我们忽略掉了一些错误代码，这些错误代码一般不能给我们任何有用的信息（比如NVidia驱动中的`131185`仅告诉我们缓冲成功创建了）。
 
+既然我们已经有了回调函数，那么是时候初始化调试输出了：
+
+```c++
+if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+{
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); 
+    glDebugMessageCallback(glDebugOutput, nullptr);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+} 
+```
+
+在这里，我们告诉OpenGL启用调试输出，调用<fun>glEnable(GL_DEBUG_SYNCRHONOUS)</fun>告诉OpenGL在发生错误时直接调用回调函数。
+
 ### 过滤调试输出
 
 有了<fun>glDebugMessageControl</fun>，你可以潜在地过滤出你需要的错误类型。在这里我们不打算过滤任何来源，类型或者严重等级。如果我们仅希望显示OpenGL API的高严重等级错误消息，你可以设置为以下这样：
@@ -230,7 +235,7 @@ glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_ERROR, 0,
 
 如果你正在利用其它使用调试输出上下文的程序或OpenGL代码进行开发，这会非常有用。其它的开发者能快速了解你自定义OpenGL代码中任何**报告出来的**Bug。
 
-总而言之，调试输出（如果你能使用它）对与快速捕捉错误是非常有用的，完全值得你花一点时间来配置，它能够省下你非常多的开发时间。你可以在[这里](http://learnopengl.com/code_viewer_gh.php?code=src/6.in_practice/1.debugging/debugging.cpp)找到源码，里面<fun>glGetError</fun>和调试输出上下文都有配置；看看你是否能够修复所有的错误。
+总而言之，调试输出（如果你能使用它）对与快速捕捉错误是非常有用的，完全值得你花一点时间来配置，它能够省下你非常多的开发时间。你可以在[这里](http://learnopengl.com/code_viewer_gh.php?code=src/7.in_practice/1.debugging/debugging.cpp)找到源码，里面<fun>glGetError</fun>和调试输出上下文都有配置；看看你是否能够修复所有的错误。
 
 ## 调试着色器输出
 
@@ -256,7 +261,7 @@ void main()
 
 ![](../img/06/01/debugging_glsl_output.png)
 
-从视觉效果来看，我们可以看见法向量应该是正确的，因为纳米装的右侧大部分都是红色的（这表明法线大概（正确地）指向正x轴），并且类似的纳米装的前方大部分都为蓝色，即正z轴方向。
+从视觉效果来看，我们可以看见世界空间的法向量应该是正确的，因为背包模型的右侧大部分都是红色的（这表明法线大概（正确地）指向正x轴），同样的，背包的前方大部分都为蓝色，即正z轴方向。
 
 这一方法可以很容易拓展到你想要测试的任何变量。一旦你卡住了或者怀疑你的着色器有问题，尝试显示多个变量和/或中间结果，看看哪部分算法什么的没加上或者有错误。
 
@@ -289,7 +294,7 @@ glsllangvalidator shaderFile.vert
 
 ## 帧缓冲输出
 
-你的调试工具箱中另外一个技巧就是在OpenGL程序中一块特定区域显示帧缓冲的内容。你可能会比较频繁地使用[帧缓冲](../04 Advanced OpenGL/05 Framebuffers.md)，但由于帧缓冲的魔法通常在幕后进行，有时候想要知道出什么问题会非常困难。在你的程序中显示帧缓冲的内容是一个很有用的技巧，帮助你快速检查错误。
+你的调试工具箱中另外一个技巧就是在OpenGL程序中一块特定区域显示帧缓冲的内容。你可能会比较频繁地使用[帧缓冲](../04 Advanced OpenGL/05 Framebuffers.md)，但由于帧缓冲的操作通常在后台进行，有时候想要知道出什么问题会非常困难。在你的程序中显示帧缓冲的内容是一个很有用的技巧，帮助你快速检查错误。
 
 !!! important
 
@@ -367,14 +372,6 @@ int main()
 
 我在下面列出了一些流行的调试工具，选几个尝试一下，看看哪个最适合你。
 
-### gDebugger
-
-gDebugger是一个非常易用的跨平台OpenGL程序调试工具。gDebugger会在你运行的OpenGL程序边上，提供OpenGL状态的详细概况。你可以随时暂停程序来检查当前状态，纹理内容以及缓冲使用。你可以在[这里](http://www.gremedy.com/)下载gDebugger。
-
-运行gDebugger只需要打开程序，创建一个工程，给它你OpenGL程序的位置于工作目录即可。
-
-![](../img/06/01/debugging_external_gdebugger.png)
-
 ### RenderDoc
 
 RenderDoc是另外一个很棒的（完全[开源](https://github.com/baldurk/renderdoc)的）独立调试工具。和gDebugger类似，你只需要设置捕捉的程序以及工作目录就行了。你的程序会正常运行，当你想要检查一个特定的帧的时候，你只需要让RenderDoc在程序当前状态下捕捉一个或多个帧即可。在捕捉的帧当中，你可以观察管线状态，所有OpenGL指令，缓冲储存，以及使用的纹理。
@@ -383,15 +380,15 @@ RenderDoc是另外一个很棒的（完全[开源](https://github.com/baldurk/re
 
 ### CodeXL
 
-[CodeXL](http://developer.amd.com/tools-and-sdks/opencl-zone/codexl/)是由AMD开发的一款GPU调试工具，它有独立版本也有Visual Studio插件版本。CodeXL可以给你非常多的信息，对于图形程序的性能测试也非常有用。CodeXL在NVidia与Intel的显卡上也能运行，不过会不支持OpenCL调试。
+[CodeXL](https://gpuopen.com/compute-product/codexl/)是由AMD开发的一款GPU调试工具，它有独立版本也有Visual Studio插件版本。CodeXL可以给你非常多的信息，对于图形程序的性能测试也非常有用。CodeXL在NVidia与Intel的显卡上也能运行，不过会不支持OpenCL调试。
 
 ![](../img/06/01/debugging_external_codexl.png)
 
-我没有太多的CodeXL使用经验，我个人觉得gDebugger和RenderDoc会更容易使用一点，但我仍把它列在这里，因为它仍是一个非常可靠的工具，并且主要是由最大的GPU制造商之一AMD开发的。
+我没有太多的CodeXL使用经验，我个人觉得RenderDoc会更容易使用一点，但我仍把它列在这里，因为它仍是一个非常可靠的工具，并且主要是由最大的GPU制造商之一开发的。
 
 ### NVIDIA Nsight
 
-NVIDIA流行的[Nsight](https://developer.nvidia.com/nvidia-nsight-visual-studio-edition) GPU调试工具并不是一个独立程序，而是一个Visual Studio IDE或者Eclipse IDE的插件 (NVIDIA现在也提供独立版本了)。Nsight插件对图形开发者来说非常容易使用，因为它给出了GPU用量，逐帧GPU状态大量运行时的统计数据。
+NVIDIA流行的[Nsight](https://developer.nvidia.com/nvidia-nsight-visual-studio-edition) GPU调试工具并不是一个独立程序，而是一个Visual Studio IDE或者Eclipse IDE的插件 (NVIDIA现在也提供[独立版本](https://developer.nvidia.com/nsight-graphics)了)。Nsight插件对图形开发者来说非常容易使用，因为它给出了GPU用量，逐帧GPU状态大量运行时的统计数据。
 
 当你在Visual Studio（或Eclipse）使用Nsight的调试或者性能测试指令启动程序的时候，Nsight将会在程序自身中运行。Nsight非常棒的一点就是它在你的程序中渲染了一套GUI系统，你可以使用它获取你程序各种各样有用的信息，可以是运行时也可以是逐帧分析。
 
@@ -399,7 +396,7 @@ NVIDIA流行的[Nsight](https://developer.nvidia.com/nvidia-nsight-visual-studio
 
 Nsight是一款非常有用的工具，在我看来比上述其它工具都有更好的表现，但它仍有一个非常重要的缺点，它只能在NVIDIA的显卡上工作。如果你正在使用一款NVIDIA的显卡（并且使用Visual Studio），Nsight是非常值得一试的。
 
-我知道我可能遗漏了一些其它的调试工具（比如我还能想到有Valve的[VOGL](https://github.com/ValveSoftware/vogl)和[APItrace](https://apitrace.github.io/)），但我觉得这个列表已经给你足够多的工具来实验了。我并不是之前提到的任何一个工具的专家，所以如果我在哪里讲错了请在评论区留言，我会很乐意改正。
+我知道我可能遗漏了一些其它的调试工具（比如我还能想到有Valve的[VOGL](https://github.com/ValveSoftware/vogl)和[APItrace](https://apitrace.github.io/)），但我觉得这个列表已经给你足够多的工具来实验了。
 
 ## 附加资源
 
