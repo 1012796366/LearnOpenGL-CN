@@ -374,7 +374,7 @@ int main()
 
 ### RenderDoc
 
-RenderDoc是另外一个很棒的（完全[开源](https://github.com/baldurk/renderdoc)的）独立调试工具。和gDebugger类似，你只需要设置捕捉的程序以及工作目录就行了。你的程序会正常运行，当你想要检查一个特定的帧的时候，你只需要让RenderDoc在程序当前状态下捕捉一个或多个帧即可。在捕捉的帧当中，你可以观察管线状态，所有OpenGL指令，缓冲储存，以及使用的纹理。
+RenderDoc是一个很棒的（完全[开源](https://github.com/baldurk/renderdoc)的）独立调试工具。你只需要设置捕捉的程序以及工作目录就行了。你的程序会正常运行，当你想要检查一个特定的帧的时候，你只需要让RenderDoc在程序当前状态下捕捉一个或多个帧即可。在捕捉的帧当中，你可以观察管线状态，所有OpenGL指令，缓冲储存，以及使用的纹理。
 
 ![](../img/06/01/debugging_external_renderdoc.png)
 
