@@ -136,13 +136,13 @@ void main()
 首先我们将深度值变换为NDC，不是非常困难：
 
 ```c++
-float z = depth * 2.0 - 1.0;
+float ndc = depth * 2.0 - 1.0;
 ```
 
-接下来使用获取到的z值，应用逆变换来获取线性的深度值：
+接下来使用获取到的NDC值，应用逆变换来获取线性的深度值：
 
 ```c++
-float linearDepth = (2.0 * near * far) / (far + near - z * (far - near));
+float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));
 ```
 
 这个方程是用投影矩阵推导得出的，它使用了方程2来非线性化深度值，返回一个<var>near</var>与<var>far</var>之间的深度值。这篇注重数学的[文章](http://www.songho.ca/opengl/gl_projectionmatrix.html)为感兴趣的读者详细解释了投影矩阵，它也展示了这些方程是怎么来的。
@@ -158,7 +158,7 @@ float far  = 100.0;
   
 float LinearizeDepth(float depth) 
 {
-    float z = depth * 2.0 - 1.0; // back to NDC 
+    float z = depth * 2.0 - 1.0; // 转换为 NDC
     return (2.0 * near * far) / (far + near - z * (far - near));	
 }
 
