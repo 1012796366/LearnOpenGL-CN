@@ -22,13 +22,13 @@ OpenGL中，<def>混合</def>(Blending)通常是实现物体<def>透明度</def>
 
 有些图片并不需要半透明，只需要根据纹理颜色值，显示一部分，或者不显示一部分，没有中间情况。比如说草，如果想不太费劲地创建草这种东西，你需要将一个草的纹理贴在一个2D四边形(Quad)上，然后将这个四边形放到场景中。然而，草的形状和2D四边形的形状并不完全相同，所以你只想显示草纹理的某些部分，而忽略剩下的部分。
 
-下面这个纹理正是这样的，它要么是完全不透明的（alpha值为1.0），要么是完全透明的（alpha值为0.0），没有中间情况。你可以看到，只要不是草的部分，这个图片显示的都是网站的背景颜色而不是它本身的颜色。
+下面[这个](../img/04/03/grass.png)纹理正是这样的，它要么是完全不透明的（alpha值为1.0），要么是完全透明的（alpha值为0.0），没有中间情况。你可以看到，只要不是草的部分，这个图片显示的都是网站的背景颜色而不是它本身的颜色。
 
 ![](../img/04/03/grass.png)
 
-所以当添加像草这样的植被到场景中时，我们不希望看到草的方形图像，而是只显示草的部分，并能看透图像其余的部分。我们想要<def>丢弃</def>(Discard)显示纹理中透明部分的片段，不将这些片段存储到颜色缓冲中。在此之前，我们还要学习如何加载一个透明的纹理。
+所以当添加像草这样的植被到场景中时，我们不希望看到草的方形图像，而是只显示草的部分，并能看透图像其余的部分。我们想要<def>丢弃</def>(Discard)显示纹理中透明部分的片段，不将这些片段存储到颜色缓冲中
 
-要想加载有alpha值的纹理，我们并不需要改很多东西，`stb_image`在纹理有alpha通道的时候会自动加载，但我们仍要在纹理生成过程中告诉OpenGL，我们的纹理现在使用alpha通道了：
+在此之前，我们还要学习如何加载一个透明的纹理。要想加载有alpha值的纹理，我们并不需要改很多东西，`stb_image`在纹理有alpha通道的时候会自动加载，但我们仍要在纹理生成过程中告诉OpenGL，我们的纹理现在使用alpha通道了：
 
 ```c++
 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -189,6 +189,8 @@ OpenGL甚至给了我们更多的灵活性，允许我们改变方程中源和�
 - GL_FUNC_ADD：默认选项，将两个分量相加：\(\bar{C}_{result} = \color{green}{Src} + \color{red}{Dst}\)。
 - GL_FUNC_SUBTRACT：将两个分量相减： \(\bar{C}_{result} = \color{green}{Src} - \color{red}{Dst}\)。
 - GL_FUNC_REVERSE_SUBTRACT：将两个分量相减，但顺序相反：\(\bar{C}_{result} = \color{red}{Dst} - \color{green}{Src}\)。
+- GL_MIN：取两个分量中的最小值：\(\bar{C}_{result} = {min}(\color{red}{Dst}, \color{green}{Src})\)。
+- GL_MAX：取两个分量中的最大值：\(\bar{C}_{result} = {max}(\color{red}{Dst}, \color{green}{Src})\)。
 
 通常我们都可以省略调用<fun>glBlendEquation</fun>，因为<var>GL_FUNC_ADD</var>对大部分的操作来说都是我们希望的混合方程，但如果你真的想打破主流，其它的方程也可能符合你的要求。
 

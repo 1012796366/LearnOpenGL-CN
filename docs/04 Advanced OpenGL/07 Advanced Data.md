@@ -6,11 +6,11 @@
 翻译     | Krasjet
 校对     | 暂未校对
 
-我们在OpenGL中大量使用缓冲来储存数据已经有很长时间了。操作缓冲其实还有更有意思的方式，而且使用纹理将大量数据传入着色器也有更有趣的方法。这一节中，我们将讨论一些更有意思的缓冲函数，以及我们该如何使用纹理对象来储存大量的数据（纹理的部分还没有完成）。
+我们在OpenGL中大量使用缓冲来储存数据已经有很长时间了。这一节中，我们将讨论一些其他的操作缓冲的方法。
 
 OpenGL中的缓冲只是一个管理特定内存块的对象，没有其它更多的功能了。在我们将它绑定到一个<def>缓冲目标</def>(Buffer Target)时，我们才赋予了其意义。当我们绑定一个缓冲到<var>GL_ARRAY_BUFFER</var>时，它就是一个顶点数组缓冲，但我们也可以很容易地将其绑定到<var>GL_ELEMENT_ARRAY_BUFFER</var>。OpenGL内部会为每个目标储存一个缓冲，并且会根据目标的不同，以不同的方式处理缓冲。
 
-到目前为止，我们一直是调用<fun>glBufferData</fun>函数来填充缓冲对象所管理的内存，这个函数会分配一块内存，并将数据添加到这块内存中。如果我们将它的`data`参数设置为`NULL`，那么这个函数将只会分配内存，但不进行填充。这在我们需要**预留**(Reserve)特定大小的内存，之后回到这个缓冲一点一点填充的时候会很有用。
+到目前为止，我们一直是调用<fun>glBufferData</fun>函数来填充缓冲对象所管理的内存，这个函数会分配一块GPU内存，并将数据添加到这块内存中。如果我们将它的`data`参数设置为`NULL`，那么这个函数将只会分配内存，但不进行填充。这在我们需要**预留**(Reserve)特定大小的内存，之后回到这个缓冲一点一点填充的时候会很有用。
 
 除了使用一次函数调用填充整个缓冲之外，我们也可以使用<fun>glBufferSubData</fun>，填充缓冲的特定区域。这个函数需要一个缓冲目标、一个偏移量、数据的大小和数据本身作为它的参数。这个函数不同的地方在于，我们可以提供一个偏移量，指定从**何处**开始填充这个缓冲。这能够让我们插入或者更新缓冲内存的某一部分。要注意的是，缓冲需要有足够的已分配内存，所以对一个缓冲调用<fun>glBufferSubData</fun>之前必须要先调用<fun>glBufferData</fun>。
 
@@ -69,7 +69,7 @@ glVertexAttribPointer(
 
 注意`stride`参数等于顶点属性的大小，因为下一个顶点属性向量能在3个（或2个）分量之后找到。
 
-这给了我们设置顶点属性的另一种方法。使用哪种方法都不会对OpenGL有什么立刻的好处，它只是设置顶点属性的一种更整洁的方式。具体使用的方法将完全取决于你的喜好与程序类型。
+这给了我们设置顶点属性的另一种方法。使用哪种方法都是可行的，它只是设置顶点属性的一种更整洁的方式。但是，推荐使用交错方法，因为这样一来，每个顶点着色器运行时所需要的顶点属性在内存中会更加紧密对齐。
 
 ## 复制缓冲
 
@@ -87,7 +87,6 @@ void glCopyBufferSubData(GLenum readtarget, GLenum writetarget, GLintptr readoff
 接下来<fun>glCopyBufferSubData</fun>会从`readtarget`中读取`size`大小的数据，并将其写入`writetarget`缓冲的`writeoffset`偏移量处。下面这个例子展示了如何复制两个顶点数组缓冲：
 
 ```c++
-float vertexData[] = { ... };
 glBindBuffer(GL_COPY_READ_BUFFER, vbo1);
 glBindBuffer(GL_COPY_WRITE_BUFFER, vbo2);
 glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, sizeof(vertexData));
